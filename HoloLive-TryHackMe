@@ -1,0 +1,175 @@
+HoloLive - TryHackMe Walkthrough
+
+HoloLive is an intermediate to advanced-level network penetration challenge hosted on [TryHackMe](https://tryhackme.com). In this room, you simulate a red team engagement targeting a fictional VTuber agency, HoloLive. Your objective is to compromise the network by exploiting exposed services, pivoting across systems, escalating privileges, and harvesting sensitive credentials.
+"Holo" Lab simulates a full corporate network compromise (Hololive), providing hands-on experience in:
+
+1. Initial access
+
+2. Web exploitation
+
+3. Post-exploitation
+
+4. Active Directory attacks
+
+5. Command & Control
+
+6. Advanced persistence & evasion
+
+---
+Mission
+Simulate a realistic red team engagement from external to internal access, compromise web assets, infiltrate the network, establish a foothold, move laterally, and ultimately take control of the Hololive domain. Every step brings you closer to mastering the tactics, techniques, and procedures (TTPs) of a skilled red team operator.v
+---
+
+Target IP Address
+
+Initial target IP: 10.10.227.124
+(Additional internal IPs are discovered during pivoting)
+
+---
+
+Objectives
+
+- Exploit an externally exposed web application
+- Gain initial access to the network
+- Pivot from the DMZ into the internal environment
+- Dump credentials from LSASS and Active Directory
+- Achieve domain dominance via privilege escalation
+
+---
+
+Tools and Techniques Used
+
+- Nmap, Gobuster, Nikto for enumeration
+- Burp Suite and browser dev tools for web exploitation
+- Covenant for command-and-control and payload delivery
+- Mimikatz for credential dumping
+- BloodHound and SharpHound for AD enumeration
+- Evil-WinRM, Impacket, and Chisel for lateral movement and pivoting
+
+---
+Attacks and Misconfigurations Covered
+The Hololive lab features a variety of vulnerable services, legacy protocols, and misconfigurations, such as:
+
+Misconfigured sub-domains
+
+Local and Remote File Inclusion
+
+Remote Code Execution (RCE)
+
+Docker container escape
+
+SUID binary exploitation
+
+Vulnerable DLL injection/hijacking
+
+AppLocker and AMSI bypass
+
+Password reset flaws
+
+Client-side validation bypass
+
+Net-NTLMv2 relay and SMB attacks
+
+Living off the Land Binaries (LOLBAS) abuse
+
+---
+
+Challenges and How I Overcame Them
+
+1. Password Reset Token Leak in Web Application
+
+Challenge: The password reset function leaked the JWT token in the JSON response.
+Mitigation: I used browser developer tools (Network tab) to intercept the response and extract the `resettoken`. I then crafted a password reset URL with `?token=<token>` to spoof the reset and gain account access.
+
+---
+
+2. Uploading and Running Mimikatz via Covenant
+
+Challenge: Covenant’s built-in Mimikatz task failed on modern Windows.
+Mitigation: I downloaded the latest Mimikatz binary from GitHub and manually uploaded it using Covenant’s file upload task. I then executed the full command via the Shell task:
+
+```
+.\mimikatz.exe "privilege::debug" "token::elevate" "sekurlsa::logonpasswords" exit
+```
+
+This allowed me to dump credentials without the session hanging.
+
+---
+
+3. Pivoting into the Internal Network
+
+Challenge: The internal network was not directly accessible from the initial foothold.
+Mitigation: I deployed Chisel as a SOCKS proxy over the Covenant implant to tunnel traffic. This enabled me to access internal services (e.g., RDP, SMB) via proxy-aware tools like ProxyChains and proxychains-impacket scripts.
+
+---
+
+4. Active Directory Enumeration
+
+Challenge: Identifying high-privilege users and viable escalation paths in AD.
+Mitigation: I uploaded and ran SharpHound to collect AD data, then imported it into BloodHound. This visualized trust relationships, revealing users with delegation privileges and weak ACLs that I exploited for escalation.
+
+---
+
+5. Privilege Escalation to Domain Admin
+
+Challenge: Local admin access didn’t immediately reveal a clear path to domain escalation.
+Mitigation: Using BloodHound, I identified a user with `GenericAll` permissions over another privileged account. I used PowerView and Rubeus to perform a targeted Kerberoasting attack, cracked the service ticket hash, and reused the credentials for DA access.
+
+---
+
+Learning Outcomes
+
+- How JWT tokens can be abused if improperly handled
+- Using Covenant for modern post-exploitation workflows
+- Tunneling traffic and pivoting through segmented networks
+- Mapping and exploiting Active Directory with BloodHound
+- Real-world red teaming methodology in a lab environment
+
+---
+
+Skills Covered
+Category	Topics & Techniques
+Web App Attacks	LFI, RCE, fuzzing, token abuse, client-side bypasses
+Post-Exploitation	AV evasion, persistence, DLL hijacking, privilege escalation
+Active Directory	Net-NTLMv2 relays, password resets, enumeration, lateral movement
+C2 & Pivoting	C2 framework use, tunneling, internal recon
+Container Escape	Docker breakouts, SUID abuse
+Situational Awareness	Living off the LANd, PowerShell tools, enumeration
+
+---
+
+Progression Strategy
+
+Tasks 1–7: Orientation and .NET familiarity
+
+Tasks 8–13: Initial recon and web exploitation
+
+Tasks 14–22: Post-exploitation & awareness
+
+Tasks 23–27: Pivoting and Command & Control
+
+Tasks 28–35: Deeper web exploitation & AV evasion
+
+Tasks 36–44: Advanced post-exploitation, persistence
+
+Tasks 45–48: NTLM relay attacks
+
+Task 49: Final objective — "End Game"
+
+---
+
+Prerequisites
+
+To engage with this challenge effectively, you should be familiar with:
+
+- Linux and Windows enumeration
+- Offensive web techniques (e.g., token abuse, reset logic)
+- Pivoting and tunneling (e.g., Chisel, SOCKS proxies)
+- Windows privilege escalation techniques
+- Active Directory attack vectors and tools like BloodHound
+
+---
+
+Conclusion
+
+HoloLive is a comprehensive red team simulation that tests a full range of offensive skills, from initial access and lateral movement to post-exploitation and Active Directory dominance. This challenge reinforced the importance of persistence, tool flexibility, and methodical enumeration when approaching complex networks. Each phase of the attack mimicked real-world security assessments and helped solidify my practical offensive security skill set.
